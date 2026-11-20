@@ -73,8 +73,6 @@ def check_dashboard(port: int) -> None:
 def main() -> int:
     if os.name == "nt":
         raise RuntimeError("platform_smoke.py is intended for macOS/Linux runners")
-    if sys.platform == "darwin":
-        os.environ["FSD_STARTUP_TRACE"] = "1"
 
     https_port = free_port()
     dns_port = free_port(socket.SOCK_DGRAM)

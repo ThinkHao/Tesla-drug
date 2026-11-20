@@ -12,7 +12,6 @@ r"""fsd_panel.py — FSD 拦截实况看板（纯服务端渲染，无 JavaScrip
 from __future__ import annotations
 
 import argparse
-import faulthandler
 import hashlib
 import html
 import json
@@ -789,9 +788,21 @@ def main() -> int:
     args = ap.parse_args()
     CAR_IP, CAR_MAC, HTTPS_PORT = args.car_ip, args.car_mac, args.https_port
     print("[fsd_panel] http://%s:%d  logs=%s" % (args.host, args.port, LOGS), flush=True)
-    if os.environ.get("FSD_STARTUP_TRACE") == "1":
-        faulthandler.dump_traceback_later(8)
-    app.run(host=args.host, port=args.port, threaded=True, debug=False, use_reloader=False)
+    if sys.platform == "darwin":
+        from socketserver import TCPServer
+        from werkzeug.serving import ThreadedWSGIServer
+
+        class MacOSWSGIServer(ThreadedWSGIServer):
+            def server_bind(self):
+                TCPServer.server_bind(self)
+                self.server_name = self.server_address[0]
+                self.server_port = self.server_address[1]
+
+        server = MacOSWSGIServer(args.host, args.port, app)
+        server.log_startup()
+        server.serve_forever()
+    else:
+        app.run(host=args.host, port=args.port, threaded=True, debug=False, use_reloader=False)
     return 0
 
 
