@@ -128,6 +128,17 @@ def _log_tail(service: str, lines: int = 20) -> str:
         return "日志文件不可读"
 
 
+def _port_owner(port: int) -> str:
+    if sys.platform != "darwin" or not shutil.which("lsof"):
+        return ""
+    try:
+        result = subprocess.run(["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN"],
+                                capture_output=True, text=True, timeout=3, check=False)
+        return (result.stdout or result.stderr).strip() or "无监听进程"
+    except (OSError, subprocess.SubprocessError):
+        return "lsof 查询失败"
+
+
 def _stop_process(service: str, entry: dict) -> bool:
     if not _managed_process(service, entry):
         return True
@@ -236,6 +247,8 @@ def start(args: argparse.Namespace) -> int:
         print(f"{service}: {'已启动' if ready else '启动失败'} (pid {entry['pid']})")
         if not ready:
             print(f"{service} 日志尾部:\n{_log_tail(service)}")
+            if port:
+                print(f"{service} 端口诊断:\n{_port_owner(port)}")
             failures += 1
 
     return 1 if failures else 0
