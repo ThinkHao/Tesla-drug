@@ -90,7 +90,7 @@ def _tcp_open(port: int) -> bool:
         return False
 
 
-def _wait_for_port(port: int, process: subprocess.Popen, timeout: float = 8) -> bool:
+def _wait_for_port(port: int, process: subprocess.Popen, timeout: float = 20) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if process.poll() is not None:
