@@ -4,12 +4,13 @@ Windows 原有的 PowerShell 启动方式保留。新增的 `app/cli.py` 用 Pyt
 
 ## 安装依赖
 
-在项目根目录创建虚拟环境并安装项目依赖：
+从 macOS/Linux Release 包解压后，在项目目录运行安装脚本；它会创建 `.venv` 并安装 Python 依赖：
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r app/requirements.txt
+./install.sh
 ```
+
+也可以手动执行 `python3 -m venv .venv` 和 `.venv/bin/python -m pip install -r app/requirements.txt`。
 
 ## 配置网络
 
@@ -20,10 +21,12 @@ python3 -m venv .venv
 把命令里的 `10.42.0.1` 换成热点接口的 IPv4 地址。443 和 53 是特权端口，因此 macOS/Linux 需要以管理员权限运行服务；启动、查看和停止都使用同一权限级别：
 
 ```sh
-sudo .venv/bin/python app/cli.py start --ip 10.42.0.1
-sudo .venv/bin/python app/cli.py status
-sudo .venv/bin/python app/cli.py stop
+./fsd-mitm start --ip 10.42.0.1
+./fsd-mitm status
+./fsd-mitm stop
 ```
+
+`fsd-mitm` 会通过 `sudo` 运行服务管理命令。Windows Release 包保留 `install.ps1` 和“一键安装.cmd”。
 
 如果车机 IP 固定，可补充 `--car-ip 10.42.0.20`，看板会用它显示二层连通状态和 443 连接。默认端口为 TCP 443、UDP 53、看板 TCP 8900；可用 `--https-port`、`--dns-port` 和 `--dashboard-port` 调整。
 
@@ -38,8 +41,12 @@ sudo .venv/bin/python app/cli.py stop
 
 这个入口负责应用服务，不负责自动创建热点，也不自动开放系统防火墙。使用前需要自行配置热点、共享、客户端 DNS 和入站访问规则。
 
+Release 包不携带仓库中的预生成 mitmproxy CA 私钥；首次启动时会在本机生成 CA。需要在车机上信任新生成的 CA 后，TLS 拦截才能正常工作。
+
 当前 macOS/Linux 入口只覆盖热点模式的应用服务；Windows 的 `start_all.ps1` 路由模式、ARP 引流和 Windows 热点管理仍由原有脚本负责。
 
 ## GitHub Actions
 
 `.github/workflows/platform-smoke.yml` 在 `ubuntu-latest` 和 `macos-latest`、Python 3.12 上安装依赖并运行 `app/tests/platform_smoke.py`。冒烟测试使用回环地址和临时高端口，不需要管理员权限，也不会改系统网络设置；它验证服务启动、DNS 回答、看板 API、状态查询和停止清理。修改 `app/` 或本说明时会在 push / pull request 运行，也可以手动触发。
+
+`.github/workflows/release-packages.yml` 会为 Windows 生成 ZIP，为 macOS 和 Linux 各生成 TAR.GZ。推送 `v*` 标签时会自动创建 GitHub Release 并附上三个包；手动运行该工作流只生成可下载的 Actions artifact。

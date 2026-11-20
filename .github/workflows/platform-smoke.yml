@@ -5,11 +5,21 @@ on:
     paths:
       - "app/**"
       - "PLATFORMS.md"
+      - "install.sh"
+      - "fsd-mitm"
+      - "scripts/package_release.py"
+      - ".gitattributes"
+      - ".github/workflows/release-packages.yml"
       - ".github/workflows/platform-smoke.yml"
   pull_request:
     paths:
       - "app/**"
       - "PLATFORMS.md"
+      - "install.sh"
+      - "fsd-mitm"
+      - "scripts/package_release.py"
+      - ".gitattributes"
+      - ".github/workflows/release-packages.yml"
       - ".github/workflows/platform-smoke.yml"
   workflow_dispatch:
 
