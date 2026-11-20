@@ -43,11 +43,7 @@ HTTPS_PORT = int(os.environ.get("FSD_HTTPS_PORT", "443"))
 
 def _local_ips() -> set[str]:
     ips = {"127.0.0.1", "::1"}
-    try:
-        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
-            ips.add(info[4][0])
-    except OSError:
-        pass
+    ips.update(ip.strip() for ip in os.environ.get("FSD_LOCAL_IPS", "").split(",") if ip.strip())
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.connect(("223.5.5.5", 53))

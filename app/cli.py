@@ -178,6 +178,7 @@ def start(args: argparse.Namespace) -> int:
         "FSD_MOCK_LOG_DIR": str(LOGS),
         "FSD_MOCK_LOG_ALL": "1",
         "FSD_MOCK_MODE_FILE": str(ROOT / "mode.json"),
+        "FSD_LOCAL_IPS": ",".join(filter(None, [os.environ.get("FSD_LOCAL_IPS", ""), args.ip])),
         "PYTHONUNBUFFERED": "1",
     })
     mitmdump = _mitmdump()
