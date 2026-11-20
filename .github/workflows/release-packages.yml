@@ -2,6 +2,8 @@ name: Build platform release packages
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -25,7 +27,7 @@ jobs:
       - name: Build Windows, macOS, and Linux archives
         run: python scripts/package_release.py --version "$RELEASE_VERSION"
         env:
-          RELEASE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version }}
+          RELEASE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version || format('snapshot-{0}', github.sha) }}
       - name: Check Unix installer syntax
         run: sh -n install.sh fsd-mitm
       - uses: actions/upload-artifact@v7.0.2
