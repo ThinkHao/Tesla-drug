@@ -101,7 +101,7 @@ def _wait_for_port(port: int, process: subprocess.Popen, timeout: float = 8) -> 
     return False
 
 
-def _spawn(service: str, argv: list[str], env: dict) -> dict:
+def _spawn(service: str, argv: list[str], env: dict) -> tuple[dict, subprocess.Popen]:
     LOGS.mkdir(parents=True, exist_ok=True)
     log_path = LOGS / f"{service}.log"
     with log_path.open("ab", buffering=0) as log:
@@ -117,7 +117,15 @@ def _spawn(service: str, argv: list[str], env: dict) -> dict:
             creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS)
             if os.name == "nt" else 0,
         )
-    return {"pid": process.pid, "argv": argv, "started": datetime.now().isoformat(timespec="seconds")}
+    entry = {"pid": process.pid, "argv": argv, "started": datetime.now().isoformat(timespec="seconds")}
+    return entry, process
+
+
+def _log_tail(service: str, lines: int = 20) -> str:
+    try:
+        return "\n".join((LOGS / f"{service}.log").read_text(encoding="utf-8", errors="replace").splitlines()[-lines:])
+    except OSError:
+        return "日志文件不可读"
 
 
 def _stop_process(service: str, entry: dict) -> bool:
@@ -211,7 +219,7 @@ def start(args: argparse.Namespace) -> int:
             continue
 
         try:
-            entry = _spawn(service, argv, env)
+            entry, process = _spawn(service, argv, env)
         except OSError as exc:
             print(f"{service}: 启动失败：{exc}")
             failures += 1
@@ -223,25 +231,13 @@ def start(args: argparse.Namespace) -> int:
             time.sleep(0.8)
             ready = _managed_process(service, entry)
         else:
-            ready = _wait_for_port(port, _TrackedProcess(entry["pid"]))
+            ready = _wait_for_port(port, process)
         print(f"{service}: {'已启动' if ready else '启动失败'} (pid {entry['pid']})")
         if not ready:
+            print(f"{service} 日志尾部:\n{_log_tail(service)}")
             failures += 1
 
     return 1 if failures else 0
-
-
-class _TrackedProcess:
-    """只提供 _wait_for_port 所需的 poll()，供已脱离终端的进程使用。"""
-    def __init__(self, pid: int):
-        self.pid = pid
-
-    def poll(self):
-        try:
-            os.kill(self.pid, 0)
-            return None
-        except OSError:
-            return 1
 
 
 def status(args: argparse.Namespace) -> int:
